@@ -1,188 +1,98 @@
-{\rtf1\ansi\ansicpg1252\cocoartf1404\cocoasubrtf470
-{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fnil\fcharset134 PingFangSC-Regular;}
-{\colortbl;\red255\green255\blue255;\red220\green161\blue13;\red0\green0\blue233;\red53\green53\blue53;
-}
-\paperw11900\paperh16840\margl1440\margr1440\vieww10800\viewh8400\viewkind0
-\deftab560
-\pard\pardeftab560\slleading20\partightenfactor0
 
-\f0\fs24 \cf0 \
-\pard\pardeftab560\slleading20\partightenfactor0
+系统构架  Scalability 
+https://github.com/shashank88/system_design/blob/master/README.md#myapproach
 
-\f1 \cf0 \'cf\'b5\'cd\'b3\'b9\'b9\'bc\'dc  Scalability 
-\f0 \
-\pard\pardeftab560\slleading20\partightenfactor0
-{\field{\*\fldinst{HYPERLINK "https://github.com/shashank88/system_design/blob/master/README.md#myapproach"}}{\fldrslt \cf2 \ul \ulc2 https://github.com/shashank88/system_design/blob/master/README.md#myapproach}}\cf3 \ul \ulc3 \
-\pard\pardeftab560\slleading20\pardirnatural\partightenfactor0
-\cf3 \
-\
-\pard\pardeftab560\slleading20\pardirnatural\partightenfactor0
 
-\b \cf4 \ulnone P1: Stateless
-\b0 \cf3 \ul \
-\pard\pardeftab560\slleading20\partightenfactor0
-\cf4 \ulnone a scalable web service are hidden behind a 
-\b load balancer\
-\
+P1: Stateless
+a scalable web service are hidden behind a load balancer
 
-\b0 Server does not store any user-related data, like sessions or profile pictures (Stateless), instead, sessions should be stored externally, an 
-\b external
-\b0  
-\b persistent cache
-\b0  will have better performance than an external database\
-\
-By now, the server could horizontally scale, and could serve lots of concurrent requests \
-\
-N.B.\
-Sessions (maintain the data/conversation between client and server): HTTP protocol and Web Servers are stateless, but sometimes in web applications, we should know 
-\b who the client is
-\b0  and process the request accordingly. For example, a 
-\b shopping cart application
-\b0  should know who is sending the request to add an item and in which cart the item has to be added or who is sending checkout request so that it can charge the amount to correct client.\
-\
-\
+Server does not store any user-related data, like sessions or profile pictures (Stateless), instead, sessions should be stored externally, an external persistent cache will have better performance than an external database
 
-\b P2: DB\
+By now, the server could horizontally scale, and could serve lots of concurrent requests 
 
-\b0 servers slow down due to the MySQL\
-Path1: master-slave replication (read from slaves, write to master), to spread the load; but eventually => denormalisation  (no  need join to get the results)\
-\pard\pardeftab560\slleading20\partightenfactor0
-\cf3 \ul \
-\pard\pardeftab560\slleading20\partightenfactor0
-\cf4 \ulnone Path 2:\cf3 \ul \
+N.B.
+Sessions (maintain the data/conversation between client and server): HTTP protocol and Web Servers are stateless, but sometimes in web applications, we should know who the client is and process the request accordingly. For example, a shopping cart application should know who is sending the request to add an item and in which cart the item has to be added or who is sending checkout request so that it can charge the amount to correct client.
 
-\b \cf4 \ulnone denormalize
-\b0  right from the beginning and include no more Joins in any database query. You can stay with MySQL, and use it like a 
-\b NoSQL
-\b0  database, or you can switch to a better and easier to scale NoSQL(non relational db) database like 
-\b MongoDB or CouchDB\
-\
 
-\b0 However, DB R/W is expensive, so we use cache.\
-\pard\pardeftab560\slleading20\pardirnatural\partightenfactor0
-\cf4 \
-\
-\pard\pardeftab560\slleading20\pardirnatural\partightenfactor0
+P2: DB
+servers slow down due to the MySQL
+Path1: master-slave replication (read from slaves, write to master), to spread the load; but eventually => denormalisation  (no  need join to get the results)
 
-\b \cf4 P3: Cache\
-\pard\pardeftab560\slleading20\pardirnatural\partightenfactor0
+Path 2:
+denormalize right from the beginning and include no more Joins in any database query. You can stay with MySQL, and use it like a NoSQL database, or you can switch to a better and easier to scale NoSQL(non relational db) database like MongoDB or CouchDB
 
-\b0 \cf4 cache database query result\
-\pard\pardeftab560\slleading20\pardirnatural\partightenfactor0
+However, DB R/W is expensive, so we use cache.
 
-\b \cf4 path1:\'a0Cached Database Queries\
-\pard\pardeftab560\slleading20\pardirnatural\partightenfactor0
 
-\b0 \cf4 bad if table cel l changed, need to delete cached query which may use that cell\
-\pard\pardeftab560\slleading20\pardirnatural\partightenfactor0
+P3: Cache
+cache database query result
+path1: Cached Database Queries
+bad if table cel l changed, need to delete cached query which may use that cell
 
-\b \cf4 \
-path2: Cached Object:\
-\pard\pardeftab560\slleading20\pardirnatural\partightenfactor0
+path2: Cached Object:
+convert the DB row to object, easy to delete. this conversion could be done asynchronously by worker servers/threads, so eventually servers will only access the cache not DB.     cache tool: Redis/Memcached
 
-\b0 \cf4 convert the DB row to object, easy to delete. this conversion could be done 
-\b \cf4 asynchronously
-\b0 \cf4  by worker servers/threads, so eventually servers will only access the cache not DB.     cache tool: 
-\b \cf4 Redis/Memcached\
-\
-\
-\
-P4: Asynchronism\
-Async1:\
-\pard\pardeftab560\slleading20\partightenfactor0
 
-\b0 \cf4 Referring to a web app this means doing the time-consuming work 
-\b in advance
-\b0  and serving the finished work with 
-\b a low request time.\
-Prepare in advance and store the result somewhere and waiting to be requested. \
-\
 
-\b0 for example: 
-\f1 \cf4 \'cc\'e1\'c7\'b0\'b0\'d1\'b6\'af\'cc\'ac\'d2\'b3\'c3\'e6\'e4\'d6\'c8\'be\'ba\'c3\'a3\'ac\'d2\'d4\'be\'b2\'cc\'ac\'d2\'b3\'c3\'e6\'b5\'c4\'b7\'bd\'ca\'bd\'b4\'a2\'b4\'e6\'d4\'da\'d4\'c6\'b6\'cb\'a3\'ac
-\f0 \cf4 render the dynamic page in advance, store them as the static page on AWS. so that server could be ready for millions of request at a single time.\
+P4: Asynchronism
+Async1:
+Referring to a web app this means doing the time-consuming work in advance and serving the finished work with a low request time.
+Prepare in advance and store the result somewhere and waiting to be requested. 
 
-\b \
-Async2:\
+for example: 提前把动态页面渲染好，以静态页面的方式储存在云端，render the dynamic page in advance, store them as the static page on AWS. so that server could be ready for millions of request at a single time.
 
-\b0 response immediately to user asking them to something else while waiting for the result;\
-\
-use a queue, send the request into queue. so the server could be infinitely scalable \
-\
-\
-\
-\
-SQL: structured query langulange\
-NoSQL: non structured \
-\
-Structured DB: table entry must follow the table structure. e.g. table with fields name & email, you couldnt add the additional information as \'93birthday\'94\
-\
-Non S: collections = table; document = one row; dynamic key&value pairs inside document  to present the content\
-\
+Async2:
+response immediately to user asking them to something else while waiting for the result;
 
-\b Mango DB
-\b0 : Non Structured DB\
-sharing: petition data into subsets \
-\pard\pardeftab560\slleading20\pardirnatural\partightenfactor0
+use a queue, send the request into queue. so the server could be infinitely scalable 
 
-\b \cf4 \
-\
-\
-\
-\
-CS75
-\f1 \cf4 \'a3\'ba
-\f0 \cf4 \
-dedicated server:
-\b0 \cf4  one server responsible for images, the other responsible for documents
-\b \cf4 \
-redundancy server: 
-\b0 \cf4 horizontal scalable 
-\b \cf4 \
-\
-sessions: 
-\b0 \cf4 is stored in each server\'92s memory, to remember different users  behaviours. e.g. shopping carts, when user adds a new item, the server knows how many items already added by the same user before. \
 
-\b \cf4 However
-\b0 \cf4 , sessions doesn\'92t work if we use load-balancing, because each server has different session for the same user`\
 
-\b \cf4 Unless
-\b0 \cf4 , sessions are stored in the external server (file server)\
 
-\b \cf4 Whatif, the file system dies, non of the server could work\'85.. so we need to replicate them, make them redundancy, using RAID technology
-\b0 \cf4 \
-\
-\pard\pardeftab560\slleading20\partightenfactor0
-{\field{\*\fldinst{HYPERLINK "http://wonko.com/post/why-you-probably-shouldnt-use-cookies-to-store-session-data"}}{\fldrslt \cf2 Why you probably shouldn't use cookies to store session data}}: slow, add 144ms latency ; cookie should only have few KB; server don\'92t want to expose the its data/config\
-\pard\pardeftab560\slleading20\pardirnatural\partightenfactor0
-\cf4 \
-\
-\
-RAID: redundant array of independent disks\
-RAID0: add performance, because multiple disks are writing concurrently \
-RAID1: add redundancy, in case one is done, 2 disks keeps the same data\
-\
-\pard\pardeftab560\slleading20\pardirnatural\partightenfactor0
+SQL: structured query langulange
+NoSQL: non structured 
 
-\b \cf4 \
-Cookie: 
-\b0 \cf4 sent by server in the HTTP response headers, stored in the pc disk;    **** browser send cookie to server again, to reminder what user this is (cookie containing session ID, a big random number), to maintain the session\
-\
-\
-\
-\pard\pardeftab560\slleading20\partightenfactor0
+Structured DB: table entry must follow the table structure. e.g. table with fields name & email, you couldnt add the additional information as “birthday”
 
-\b \cf4 Cache:
-\b0 \
-\pard\pardeftab560\slleading20\pardirnatural\partightenfactor0
-\cf4 \
-.html:    static content, is itself stored in the server as cache, without rendering for each request/visit\
-\
-memcache: store data in the RAM (key-value pair)  \
-\
-\
-\
-\
-\
-\
-}
+Non S: collections = table; document = one row; dynamic key&value pairs inside document  to present the content
+
+Mango DB: Non Structured DB
+sharing: petition data into subsets 
+
+
+
+
+
+CS75：
+dedicated server: one server responsible for images, the other responsible for documents
+redundancy server: horizontal scalable 
+
+sessions: is stored in each server’s memory, to remember different users  behaviours. e.g. shopping carts, when user adds a new item, the server knows how many items already added by the same user before. 
+However, sessions doesn’t work if we use load-balancing, because each server has different session for the same user`
+Unless, sessions are stored in the external server (file server)
+Whatif, the file system dies, non of the server could work….. so we need to replicate them, make them redundancy, using RAID technology
+
+Why you probably shouldn't use cookies to store session data: slow, add 144ms latency ; cookie should only have few KB; server don’t want to expose the its data/config
+
+
+
+RAID: redundant array of independent disks
+RAID0: add performance, because multiple disks are writing concurrently 
+RAID1: add redundancy, in case one is done, 2 disks keeps the same data
+
+
+Cookie: sent by server in the HTTP response headers, stored in the pc disk;    **** browser send cookie to server again, to reminder what user this is (cookie containing session ID, a big random number), to maintain the session
+
+
+
+Cache:
+
+.html:    static content, is itself stored in the server as cache, without rendering for each request/visit
+
+memcache: store data in the RAM (key-value pair)  
+
+
+
+
+
+
